@@ -25,7 +25,7 @@ module "pub-web" {
   instance_type          = "t3.micro"
   subnet_id              = module.my_vpc.public_subnets[0]
   create_security_group  = false
-  vpc_security_group_ids = [module.my_sg.id]
+  vpc_security_group_ids = [module.pub_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
 
   #user_data = templatefile("userdata.sh", {})
@@ -40,6 +40,8 @@ module "pri-ctr" {
   ami                  = data.aws_ami.my_ami.id
   instance_type        = "t3.micro"
   subnet_id            = module.my_vpc.private_subnets[0]
+  create_security_group  = false
+  vpc_security_group_ids = [module.pri_sg.id]
   iam_instance_profile = data.aws_iam_instance_profile.my_ssm_profile.name
 
   user_data = templatefile("userdata-tunnel.sh", {
@@ -56,6 +58,8 @@ module "pri-mon" {
   ami                  = data.aws_ami.my_ami.id
   instance_type        = "t3.micro"
   subnet_id            = module.my_vpc.private_subnets[0]
+  create_security_group  = false
+  vpc_security_group_ids = [module.pri_sg.id]
   iam_instance_profile = data.aws_iam_instance_profile.my_ssm_profile.name
 
   user_data = templatefile("userdata-tunnel.sh", {
