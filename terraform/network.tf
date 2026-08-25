@@ -3,8 +3,8 @@ module "my_vpc" {
   version = "~> 6.0"
 
   name = "tf-vpc"
-  cidr = "10.0.0.0/24"
-  azs  = ["ap-southeast-1"]
+  cidr = "10.0.0.0/16"
+  azs  = ["ap-southeast-1a"]
 
   public_subnets  = ["10.0.0.0/24"]
   private_subnets = ["10.0.1.0/24"]
