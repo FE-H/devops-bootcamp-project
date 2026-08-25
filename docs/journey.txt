@@ -1,0 +1,10 @@
+Journey of completing this project
+1. Review slides at Infratify for instructions on final project
+2. Create a plan to setup
+    a. Create a new S3 bucket to host the terraform state files
+    b. Setup gitignore and setup terraform configuration referencing Terraform 3 outputs
+    c. Test terraform configuration
+    d. Setup Cloudflare pages to host the static site //lesson learned using custom repo (not <username>.github.io) on gh will cause issues with custom domain.
+    e. Setup CI to lint Terraform //TODO: lint yaml, ansible, docker?
+    f. Setup Ansible configuration
+    g. Setup Docker Image for webserver
