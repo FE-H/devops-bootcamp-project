@@ -22,7 +22,7 @@ Open your terminal and move into the Terraform working directory:
 
 Bash
 `cd terraform/`
-###2. Initialize Terraform (terraform init)
+### 2. Initialize Terraform (terraform init)
 This command initializes our working directory, downloads the required provider plugins (such as the AWS provider), and sets up the backend.
 
 Bash
