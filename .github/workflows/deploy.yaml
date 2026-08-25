@@ -1,0 +1,41 @@
+name: containerize
+on: [push]
+jobs:
+  terraform-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: devops-infra/action-tflint@v1.0.5
+#  test:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v7
+#      - uses: actions/setup-node@v7
+#      - run: npm clean-install
+#      - run: npm run test
+
+#  build-push:
+#    needs: test
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v7
+#      - uses: docker/login-action@v4
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.repository_owner }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#      - uses: docker/build-push-action@v7
+#        with:
+#          context: .
+#          push: true
+#          tags: ghcr.io/fe-h/ship-dashboard:latest
+
+#  deploy:
+#    needs: build-push
+#    runs-on: self-hosted
+#    steps:
+#      - uses: actions/checkout@v7
+#      - run: docker compose up -d --pull always
+
+#permissions:
+#  packages: write
