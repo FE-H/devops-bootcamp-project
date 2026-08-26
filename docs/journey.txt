@@ -8,3 +8,6 @@ Journey of completing this project
     e. Setup CI to lint Terraform //TODO: lint yaml, ansible, docker?
     f. Setup Ansible configuration
     g. Setup Docker Image for webserver
+        g-1. Multi-stage build beings with node build
+        g-2. Build nginx and copy the build output from g-1 then serve the app at port 80
+        g-3. Without g-1, the nginx will only show nginx welcome page
