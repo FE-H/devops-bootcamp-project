@@ -8,7 +8,7 @@ output "ssm_pub-web" {
 
 #TO-DO : check if when apply able to SSM into private servers - DONE
 output "pri-ctr" {
-  value = module.pri-ctr.public_ip
+  value = module.pri-ctr.private_ip
 }
 
 output "ssm_pri-ctr" {
@@ -17,7 +17,7 @@ output "ssm_pri-ctr" {
 
 #TO-DO : check if when apply able to SSM into private servers - DONE
 output "pri-mon" {
-  value = module.pri-mon.public_ip
+  value = module.pri-mon.private_ip
 }
 
 output "ssm_pri-mon" {
