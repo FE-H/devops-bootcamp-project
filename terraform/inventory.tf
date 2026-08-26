@@ -1,5 +1,5 @@
 resource "local_file" "inventory" {
-  filename = "inventory.ini"
+  filename = "../ansible/inventory.ini"
   content = templatefile("inventory.ini.tftpl", {
     node1_ip = module.pub-web.public_ip
     node2_ip = module.pri-ctr.private_ip
