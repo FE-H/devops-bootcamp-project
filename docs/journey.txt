@@ -4,9 +4,19 @@ Journey of completing this project
     a. Create a new S3 bucket to host the terraform state files
     b. Setup gitignore and setup terraform configuration referencing Terraform 3 outputs
     c. Test terraform configuration
-    d. Setup Cloudflare pages to host the static site //lesson learned using custom repo (not <username>.github.io) on gh will cause issues with custom domain.
+    d. Setup Cloudflare pages to host the static site
+        d-1. Lesson learned using custom repo (not <username>.github.io) on gh will cause issues with custom domain.
     e. Setup CI to lint Terraform //TODO: lint yaml, ansible, docker?
     f. Setup Ansible configuration
+        f-1. ansible installation location may influence which python interpreter it will take. If it is installed at global, overriding
+             it in the ansible.cfg with interpreter_python = [another location] will not work.
+        f-2. The bootcamp teaches how to use SSH connection to the created resources on AWS. However, SSM is already supported. In order to do this, the
+             prerequisites are :
+                a. Have the compatible python interpreter installed (python 3.xx.xx)
+                b. Install AWS python dependencies (boto3 and botocore), recommended to be installed within virtual environment and override the python interpreter
+                   configuration to the bin directory of that virtual environment. (may require the ansible to be installed within the virtual environment)
+                c. AWS S3 bucket is configured. In this project, the S3 bucket is created together (terraform/s3.tf) instead of being manually created.
+        f-3. Revisit the Terraform configuration as needed (e.g. check your Terraform Template and Terraform ansible inventory/hosts automation)
     g. Setup Docker Image for webserver
         g-1. Multi-stage build beings with node build
         g-2. Build nginx and copy the build output from g-1 then serve the app at port 80
