@@ -1,0 +1,25 @@
+- name: Install Ansible on Controller node
+  hosts: ctr
+  become: true
+  gather_facts: true
+  
+  tasks:
+    - name: Ensure prerequisites are installed (Ubuntu/Debian)
+      ansible.builtin.apt:
+        name: software-propoerties-common
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+    
+    - name: Add offical Ansible PPA repository (Ubuntu/Debian)
+      ansible.builtin.deb822_repository:
+        repo: ppa:ansible/ansible
+        state: present
+        update_cache: true 
+      when: ansible_os_family == "Debian" and ansible_distribution == "Ubuntu"
+
+    - name: Install Ansible (Ubuntu/Debian)
+      ansible.builtin.apt:
+        name: ansible
+        state: present
+      when: ansible_os_family == "Debian"
