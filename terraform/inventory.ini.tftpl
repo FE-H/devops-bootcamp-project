@@ -1,8 +1,19 @@
-[nodes]
-web ansible_host=${node1_ip}
-ctr ansible_host=${node2_ip}
-mon ansible_host=${node3_ip}
+[web]
+${node1_id}
+
+[ctr]
+${node2_id} 
+
+[mon]
+${node3_id}
+
+[nodes:children]
+web
+mon
+ctr
 
 [nodes:vars]
 ansible_user=ubuntu
-ansible_ssh_private_key_file=~/.ssh/id_ed25519
+ansible_connection=aws_ssm
+ansible_aws_ssm_bucket_name=${bucket_id}
+ansible_aws_ssm_region=${region}
