@@ -75,4 +75,5 @@ resource "cloudflare_dns_record" "cf_rec" {
   content = module.pub-web.public_ip
   type    = "A"
   ttl     = 1
+  proxied = true
 } 
