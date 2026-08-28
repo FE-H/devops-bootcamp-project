@@ -8,3 +8,11 @@ resource "local_file" "inventory" {
     bucket_id= module.s3_bucket.s3_bucket_id
   })
 }
+
+resource "local_file" "prom-config" {
+  filename = "../ansible/prometheus-config.yml"
+  content = templatefile("prometheus-config.yml.tftpl", {
+    node1_ip = module.pub-web.private_ip
+    node3_ip = module.pri-mon.private_ip
+  })
+}

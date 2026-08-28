@@ -8,8 +8,16 @@ data "aws_ami" "my_ami" {
   }
 }
 
-data "aws_iam_instance_profile" "my_ssm_profile" {
-  name = "EC2-SSM-Role"
+data "aws_iam_instance_profile" "ctr-profile" {
+  name = "ansible-control-node"
+}
+
+data "aws_iam_instance_profile" "web-profile" {
+  name = "web-ecr"
+}
+
+data "aws_iam_instance_profile" "mon-profile" {
+  name = "monitoring"
 }
 
 data "aws_ssm_parameter" "token" {
@@ -26,9 +34,8 @@ module "pub-web" {
   subnet_id              = module.my_vpc.public_subnets[0]
   create_security_group  = false
   vpc_security_group_ids = [module.pub_sg.id]
-  iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
+  iam_instance_profile   = data.aws_iam_instance_profile.web-profile.name
 
-  #user_data = templatefile("userdata.sh", {})
   tags = { Name = "tf-web-server-public" }
 }
 
@@ -42,11 +49,8 @@ module "pri-ctr" {
   subnet_id              = module.my_vpc.private_subnets[0]
   create_security_group  = false
   vpc_security_group_ids = [module.pri_sg.id]
-  iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
+  iam_instance_profile   = data.aws_iam_instance_profile.ctr-profile.name
 
-  user_data = templatefile("userdata-tunnel.sh", {
-    tunnel_token = data.aws_ssm_parameter.token.value
-  })
   tags = { Name = "tf-ctrl-server-private" }
 }
 
@@ -60,10 +64,7 @@ module "pri-mon" {
   subnet_id              = module.my_vpc.private_subnets[0]
   create_security_group  = false
   vpc_security_group_ids = [module.pri_sg.id]
-  iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
+  iam_instance_profile   = data.aws_iam_instance_profile.mon-profile.name
 
-  user_data = templatefile("userdata-tunnel.sh", {
-    tunnel_token = data.aws_ssm_parameter.token.value
-  })
   tags = { Name = "tf-mon-server-private" }
 }
