@@ -1,5 +1,5 @@
 - name: Naikkan stack pemantauan
-  hosts: node1
+  hosts: mon
   become: true
   vars:
     docker_users: [ubuntu]
