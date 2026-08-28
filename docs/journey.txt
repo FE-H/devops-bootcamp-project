@@ -17,6 +17,10 @@ Journey of completing this project
                    configuration to the bin directory of that virtual environment. (may require the ansible to be installed within the virtual environment)
                 c. AWS S3 bucket is configured. In this project, the S3 bucket is created together (terraform/s3.tf) instead of being manually created.
         f-3. Revisit the Terraform configuration as needed (e.g. check your Terraform Template and Terraform ansible inventory/hosts automation)
+        f-4. Attempted to use Terraform userdata invocation to install Ansible dependencies and Ansible on control node but was not successful. Migrated to playbook
+             instead. update_cache seems to keep crashing. May need to revisit this at a later time.
+        f-5. In order to start session from a remote control node on AWS, the attached IAM role needs to have the correct role and policies. Created 3 roles so that
+             each EC2 only has a specific list of roles to handle their tasks.
     g. Setup Docker Image for webserver
         g-1. Multi-stage build beings with node build
         g-2. Build nginx and copy the build output from g-1 then serve the app at port 80
