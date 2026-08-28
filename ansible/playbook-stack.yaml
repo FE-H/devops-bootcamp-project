@@ -12,8 +12,8 @@
         state: directory
     - name: Hantar prometheus.yaml
       copy:
-        src: prometheus.yaml
-        dest: /opt/monitoring/prometheus.yaml
+        src: prometheus-config.yml
+        dest: /opt/monitoring/prometheus-config.yml
 
     - name: Hantar compose.yaml
       copy:
