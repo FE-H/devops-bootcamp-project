@@ -60,4 +60,22 @@
         name: amazon.aws
         state: present
       become: false
+    
+    - name: Setup destination folder
+      file:
+        path: /opt/ansible
+        state: directory
 
+    - name: Copy configs
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /opt/ansible/
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - ansible.cfg
+        - compose.yaml
+        - inventory.ini
+        - playbook-stack.yaml
+        - prometheus-config.yml
