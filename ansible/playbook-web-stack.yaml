@@ -1,0 +1,88 @@
+- name: Run the image from ECR
+  hosts: web
+  become: true
+  vars:
+    # Image & Container Variables
+    image_name: "devops-bootcamp-project/ship"
+    image_tag: "latest"
+    container_name: "ship"
+    container_port: "80"
+    host_port: "80"
+
+    docker_users: [ubuntu]
+
+  roles:
+    - geerlingguy.docker
+
+  tasks:
+    - name: Ensure prerequisites are installed (Ubuntu/Debian)
+      ansible.builtin.apt:
+        name: 
+          - unzip
+        state: present
+        update_cache: false
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Check if AWS CLI v2 is already installed
+      ansible.builtin.command: aws --version
+      register: aws_cli_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download and install AWS CLI v2 bundle
+      block:
+        - name: Download AWS CLI zip installer
+          ansible.builtin.get_url:
+            url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+            dest: /tmp/awscliv2.zip
+            mode: '0644'
+
+        - name: Unarchive AWS CLI bundle
+          ansible.builtin.unarchive:
+            src: /tmp/awscliv2.zip
+            dest: /tmp
+            remote_src: true
+
+        - name: Run AWS CLI installation script
+          ansible.builtin.command: /tmp/aws/install --update
+          changed_when: true
+      when: aws_cli_check.rc != 0  # Only runs if "aws" command isn't found
+
+    - name: Get AWS RAccount ID using AWS CLI
+      ansible.builtin.shell: |
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --region "{{ ansible_aws_ssm_region }}")
+        echo "{\"region\": \"{{ ansible_aws_ssm_region }}\", \"account_id\": \"$ACCOUNT_ID\"}"
+      register: aws_meta  # <--- This saves the output into "aws_meta"
+      changed_when: false
+
+    - name: Set AWS variables and ECR Registry facts dynamically
+      ansible.builtin.set_fact:
+        # We read from aws_meta.stdout and use the exact keys echoed above
+        aws_account_id: "{{ (aws_meta.stdout | from_json).account_id }}"
+        ecr_registry: "{{ (aws_meta.stdout | from_json).account_id }}.dkr.ecr.{{ (aws_meta.stdout | from_json).region }}.amazonaws.com"
+
+    - name: Fetch ECR authentication token
+      ansible.builtin.shell: "aws ecr get-login-password --region {{ ansible_aws_ssm_region }}"
+      register: ecr_password
+      changed_when: false
+
+    - name: Authenticate Docker client to ECR registry
+      community.docker.docker_login:
+        registry_url: "{{ ecr_registry }}"
+        username: "AWS"
+        password: "{{ ecr_password.stdout }}"
+
+    - name: Pull application image from ECR
+      community.docker.docker_image:
+        name: "{{ ecr_registry }}/{{ image_name }}"
+        tag: "{{ image_tag }}"
+        source: pull
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ ecr_registry }}/{{ image_name }}:{{ image_tag }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "{{ host_port }}:{{ container_port }}"
