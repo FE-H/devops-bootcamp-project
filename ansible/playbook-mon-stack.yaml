@@ -1,0 +1,37 @@
+- name: Naikkan stack pemantauan
+  hosts: mon
+  become: true
+  vars:
+    docker_users: [ubuntu]
+  roles:
+    - geerlingguy.docker
+
+  tasks:
+    - name: Cipta folder stack
+      file:
+        path: /opt/monitoring
+        state: directory
+
+    - name: Hantar prometheus.yaml
+      copy:
+        src: prometheus-config.yml
+        dest: /opt/monitoring/prometheus-config.yml
+
+    - name: Hantar compose.yaml
+      copy:
+        src: compose.yaml
+        dest: /opt/monitoring/compose.yaml
+
+    - name: Fetch Cloudflare Token from AWS SSM
+      set_fact:
+        cf_token: "{{ lookup('amazon.aws.aws_ssm', '/production/cloudflare/tunnel_token', region='us-east-1') }}"
+      delegate_to: localhost  # Fetches securely from your control node context
+      become: false
+
+    - name: Manage Docker Compose Stack (Equivalent to docker compose up -d)
+      community.docker.docker_compose_v2:
+        project_src: /opt/monitoring
+        state: present
+        pull: always               # Optional: Ensures you always have latest images
+      environment:
+        TUNNEL_TOKEN: "{{ cf_token }}"
