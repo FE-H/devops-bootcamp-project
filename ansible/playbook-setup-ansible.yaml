@@ -2,24 +2,62 @@
   hosts: ctr
   become: true
   gather_facts: true
+  vars: 
+    ansible_python_interpreter: /usr/bin/python3
+
+  pre_tasks:
+    - name : Bootstrap required package bindings
+      ansible.builtin.raw: apt-get update && apt-get install -y python3-apt python3-pip
+      changed_when: false
+      when: ansible_facts['os_family'] == "Debian"
   
   tasks:
     - name: Ensure prerequisites are installed (Ubuntu/Debian)
       ansible.builtin.apt:
-        name: software-propoerties-common
+        name: software-properties-common
         state: present
-        update_cache: true
-      when: ansible_os_family == "Debian"
+        update_cache: false
+      when: ansible_facts['os_family'] == "Debian"
     
     - name: Add offical Ansible PPA repository (Ubuntu/Debian)
       ansible.builtin.deb822_repository:
-        repo: ppa:ansible/ansible
+        name: ansible-offical
+        types: deb
+        uris: https://launchpadcontent.net
+        suites: "{{ ansible_facts['distribution_release'] }}"
+        components: main
         state: present
-        update_cache: true 
-      when: ansible_os_family == "Debian" and ansible_distribution == "Ubuntu"
+      register: ppa_added
+      when: ansible_facts['os_family'] == "Debian" and ansible_facts['distribution'] == "Ubuntu"
+
+    - name: Update apt cache if repository was ppa_added
+      ansible.builtin.apt:
+        update_cache: false
+      when: ppa_added.changed
 
     - name: Install Ansible (Ubuntu/Debian)
       ansible.builtin.apt:
         name: ansible
         state: present
-      when: ansible_os_family == "Debian"
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Install required Python AWS SDK components
+      ansible.builtin.apt:
+        name:
+          - python3-boto3
+          - python3-botocore
+        state: present
+
+    - name: Install AWS Session Manager Plugin (Debian/Ubuntu)
+      ansible.builtin.apt:
+        deb: https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb
+        state: present
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Install the AWS collection from Ansible Galaxy
+      community.general.ansible_galaxy_install:
+        type: collection
+        name: amazon.aws
+        state: present
+      become: false
+
