@@ -14,7 +14,9 @@
   tasks:
     - name: Ensure prerequisites are installed (Ubuntu/Debian)
       ansible.builtin.apt:
-        name: software-properties-common
+        name: 
+          - software-properties-common
+          - unzip
         state: present
         update_cache: false
       when: ansible_facts['os_family'] == "Debian"
@@ -32,7 +34,7 @@
 
     - name: Update apt cache if repository was ppa_added
       ansible.builtin.apt:
-        update_cache: false
+        update_cache: true
       when: ppa_added.changed
 
     - name: Install Ansible (Ubuntu/Debian)
@@ -47,19 +49,37 @@
           - python3-boto3
           - python3-botocore
         state: present
+    # --- START OFFICIAL AWS CLI V2 INSTALLATION BLOCK ---
+    - name: Check if AWS CLI v2 is already installed
+      ansible.builtin.command: aws --version
+      register: aws_cli_check
+      failed_when: false
+      changed_when: false
 
+    - name: Download and install AWS CLI v2 bundle
+      block:
+        - name: Download AWS CLI zip installer
+          ansible.builtin.get_url:
+            url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+            dest: /tmp/awscliv2.zip
+            mode: '0644'
+
+        - name: Unarchive AWS CLI bundle
+          ansible.builtin.unarchive:
+            src: /tmp/awscliv2.zip
+            dest: /tmp
+            remote_src: true
+
+        - name: Run AWS CLI installation script
+          ansible.builtin.command: /tmp/aws/install --update
+          changed_when: true
+      when: aws_cli_check.rc != 0  # Only runs if "aws" command isn't found
+      
     - name: Install AWS Session Manager Plugin (Debian/Ubuntu)
       ansible.builtin.apt:
         deb: https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb
         state: present
       when: ansible_facts['os_family'] == "Debian"
-
-    - name: Install the AWS collection from Ansible Galaxy
-      community.general.ansible_galaxy_install:
-        type: collection
-        name: amazon.aws
-        state: present
-      become: false
     
     - name: Setup destination folder
       file:
@@ -77,5 +97,15 @@
         - ansible.cfg
         - compose.yaml
         - inventory.ini
-        - playbook-stack.yaml
+        - playbook-web-stack.yaml
+        - playbook-mon-stack.yaml
         - prometheus-config.yml
+
+    - name: Install all Ansible roles and collections on the control node
+      ansible.builtin.command: "ansible-galaxy {{ item.type }} install {{ item.name }}"
+      loop:
+        - { type: 'role',       name: 'geerlingguy.docker' }
+        - { type: 'collection', name: 'amazon.aws' }
+        - { type: 'collection', name: 'community.docker' }          
+      become: false
+      changed_when: false
