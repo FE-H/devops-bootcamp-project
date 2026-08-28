@@ -3,6 +3,10 @@ Journey of completing this project
 2. Create a plan to setup
     a. Create a new S3 bucket to host the terraform state files
     b. Setup gitignore and setup terraform configuration referencing Terraform 3 outputs
+          b-1. As I developed the infra for pub-web (the webserver), the cloudflare portion requires me to revisit ec2.tf and providers.tf.
+          b-2. To ensure the secrets (cloudflare token) are properly managed, terraform.tfvars and variables.tf is created. .gitignore is already configred to ignore .tfvars.
+          b-3. Cloudflare tokens is obtained from Profile > API Integration
+          b-4. Zone ID is obtained from the domain page in Cloudflare
     c. Test terraform configuration
     d. Setup Cloudflare pages to host the static site
         d-1. Lesson learned using custom repo (not <username>.github.io) on gh will cause issues with custom domain.
