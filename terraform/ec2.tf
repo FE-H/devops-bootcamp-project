@@ -28,7 +28,6 @@ module "pub-web" {
   vpc_security_group_ids = [module.pub_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
 
-  #user_data = templatefile("userdata.sh", {})
   tags = { Name = "tf-web-server-public" }
 }
 
@@ -44,9 +43,6 @@ module "pri-ctr" {
   vpc_security_group_ids = [module.pri_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
 
-  user_data = templatefile("userdata-tunnel.sh", {
-    tunnel_token = data.aws_ssm_parameter.token.value
-  })
   tags = { Name = "tf-ctrl-server-private" }
 }
 
@@ -62,8 +58,5 @@ module "pri-mon" {
   vpc_security_group_ids = [module.pri_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
 
-  user_data = templatefile("userdata-tunnel.sh", {
-    tunnel_token = data.aws_ssm_parameter.token.value
-  })
   tags = { Name = "tf-mon-server-private" }
 }
