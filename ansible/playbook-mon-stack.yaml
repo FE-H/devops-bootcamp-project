@@ -14,8 +14,8 @@
 
     - name: Hantar prometheus.yaml
       copy:
-        src: prometheus-config.yml
-        dest: /opt/monitoring/prometheus-config.yml
+        src: prometheus.yml
+        dest: /opt/monitoring/prometheus.yml
 
     - name: Hantar compose.yaml
       copy:
