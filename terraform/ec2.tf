@@ -71,8 +71,8 @@ module "pri-mon" {
 
 resource "cloudflare_dns_record" "cf_rec" {
   zone_id = var.cloudflare_zone_id
-  name = var.cloudflare_record
+  name    = var.cloudflare_record
   content = module.pub-web.public_ip
-  type = "A"
-  ttl = 1
+  type    = "A"
+  ttl     = 1
 } 
