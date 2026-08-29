@@ -85,7 +85,7 @@
       when: ansible_facts['os_family'] == "Debian"
 
     - name: Setup destination folder
-      file:
+      ansible.builtin.file:
         path: /opt/ansible
         state: directory
 
