@@ -29,3 +29,8 @@ Journey of completing this project
         g-1. Multi-stage build beings with node build
         g-2. Build nginx and copy the build output from g-1 then serve the app at port 80
         g-3. Without g-1, the nginx will only show nginx welcome page
+     h. Setup Prometheus and Grafana
+        h-1. Prometheus requires node exporters to be installed and running on each node. I didn't put in the node exporter instructions in Ansible. This was the
+             cause for the Prometheus service not detecting the nodes.
+        h-2. Grafana can be automatically setup by injecting the configuration to the docker container. So with AI, I provided the dashboard required and clarified
+             the service being prometheus. The AI (opencode) proposed the Grafana configuration and modified my control node and monitoring node ansible instructions.
