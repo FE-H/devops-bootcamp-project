@@ -5,6 +5,7 @@
     docker_users: [ubuntu]
   roles:
     - geerlingguy.docker
+    - prometheus.prometheus.node_exporter
 
   tasks:
     - name: Cipta folder stack
@@ -14,19 +15,37 @@
 
     - name: Hantar prometheus.yaml
       copy:
-        src: prometheus-config.yml
-        dest: /opt/monitoring/prometheus-config.yml
+        src: prometheus.yml
+        dest: /opt/monitoring/prometheus.yml
 
     - name: Hantar compose.yaml
       copy:
         src: compose.yaml
         dest: /opt/monitoring/compose.yaml
 
-    - name: Fetch Cloudflare Token from AWS SSM
-      set_fact:
-        cf_token: "{{ lookup('amazon.aws.aws_ssm', '/production/cloudflare/tunnel_token', region='us-east-1') }}"
-      delegate_to: localhost  # Fetches securely from your control node context
-      become: false
+    - name: Hantar grafana provisioning
+      copy:
+        src: grafana-provisioning
+        dest: /opt/monitoring/
+        mode: preserve
+
+    - name: Get SSM parameter using the target node's AWS CLI context
+      ansible.builtin.command: >
+        aws ssm get-parameter 
+        --name "/devops-bootcamp-2026/tunnel-token" 
+        --with-decryption 
+        --region "{{ ansible_aws_ssm_region }}" 
+        --query "Parameter.Value" 
+        --output text
+      delegate_to: localhost
+      register: ssm_result
+      changed_when: false
+      no_log: true
+
+    - name: Save token to a fact for downstream tasks
+      ansible.builtin.set_fact:
+        cloudflare_api_token: "{{ ssm_result.stdout }}"
+      no_log: true
 
     - name: Manage Docker Compose Stack (Equivalent to docker compose up -d)
       community.docker.docker_compose_v2:
@@ -34,4 +53,4 @@
         state: present
         pull: always               # Optional: Ensures you always have latest images
       environment:
-        TUNNEL_TOKEN: "{{ cf_token }}"
+        TUNNEL_TOKEN: "{{ cloudflare_api_token }}"

@@ -21,9 +21,9 @@
         update_cache: false
       when: ansible_facts['os_family'] == "Debian"
     
-    - name: Add offical Ansible PPA repository (Ubuntu/Debian)
+    - name: Add official Ansible PPA repository (Ubuntu/Debian)
       ansible.builtin.deb822_repository:
-        name: ansible-offical
+        name: ansible-official
         types: deb
         uris: https://launchpadcontent.net
         suites: "{{ ansible_facts['distribution_release'] }}"
@@ -99,13 +99,15 @@
         - inventory.ini
         - playbook-web-stack.yaml
         - playbook-mon-stack.yaml
-        - prometheus-config.yml
+        - prometheus.yml
+        - grafana-provisioning
 
     - name: Install all Ansible roles and collections on the control node
       ansible.builtin.command: "ansible-galaxy {{ item.type }} install {{ item.name }}"
       loop:
         - { type: 'role',       name: 'geerlingguy.docker' }
         - { type: 'collection', name: 'amazon.aws' }
-        - { type: 'collection', name: 'community.docker' }          
+        - { type: 'collection', name: 'community.docker' }
+        - { type: 'collection', name: 'prometheus.prometheus' }          
       become: false
       changed_when: false
