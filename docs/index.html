@@ -122,24 +122,30 @@
     <ul>
       <li>AWS account with CLI credentials for <code>ap-southeast-1</code> (the region is hardcoded).</li>
       <li>Terraform 1.15+ (<code>terraform/providers.tf</code> requires <code>&gt;= 1.15</code>).</li>
-      <li>AWS SSM Session Manager plugin (Ansible uses <code>aws_ssm</code>, not SSH).</li>
-      <li>Python 3 + <code>venv</code> for installing Ansible and boto3.</li>
+      <li>On <strong>your local machine</strong>: AWS CLI v2 + SSM Session Manager plugin, Python 3 + <code>venv</code>, and Ansible + boto3 (only the <code>amazon.aws</code> collection is needed locally — see step 6).</li>
       <li>A Cloudflare zone with an API token and its Zone ID.</li>
       <li>IAM instance profiles and an ECR repository that must already exist — see <a href="#caveats">caveats</a>.</li>
     </ul>
+    <p>The Ansible roles and other collections (<code>geerlingguy.docker</code>, <code>community.docker</code>, <code>prometheus.prometheus</code>) are <strong>not</strong> a local prerequisite — the bootstrap playbook installs them on the control node automatically.</p>
 
     <h2 id="quickstart">Quick start</h2>
-    <pre><code>cd terraform/
+    <p>Where you run each command matters: Terraform and the <em>bootstrap</em> playbook run from your <strong>local machine</strong>, but the web/monitoring playbooks are meant to run <strong>on the control node</strong> over an SSM session.</p>
+    <div class="note">One-time local setup (bootstrap prerequisite): <code>pip install ansible boto3 botocore</code> and <code>ansible-galaxy collection install amazon.aws</code> inside a venv, plus the AWS CLI and SSM plugin. This is only to run the SSM-based <code>playbook-setup-ansible.yaml</code> once — it then installs the full Ansible stack on <code>pri-ctr</code>.</div>
+    <pre><code># ---------- local machine ----------
+cd terraform/
 terraform init          # connect to remote S3 state
 terraform plan -out=tfplan
 terraform apply tfplan  # creates infra + generates ../ansible/inventory.ini
 
-# configure Ansible on the control node, then deploy app + monitoring
-ansible-galaxy role install geerlingguy.docker
-ansible-galaxy collection install amazon.aws community.docker prometheus.prometheus
-ansible-playbook -i inventory.ini playbook-setup-ansible.yaml   # hosts: ctr
-ansible-playbook -i inventory.ini playbook-web-stack.yaml       # hosts: web
-ansible-playbook -i inventory.ini playbook-mon-stack.yaml       # hosts: mon</code></pre>
+# bootstrap the control node (installs Ansible, roles &amp; collections on pri-ctr)
+cd ../ansible
+ansible-playbook playbook-setup-ansible.yaml      # targets: ctr
+
+# ---------- control node (pri-ctr) over SSM ----------
+aws ssm start-session --target &lt;pri-ctr_id&gt;       # see: terraform output ssm_pri-ctr
+cd /opt/ansible                                   # playbooks copied here by the bootstrap
+ansible-playbook playbook-web-stack.yaml          # targets: web
+ansible-playbook playbook-mon-stack.yaml          # targets: mon</code></pre>
 
     <h2 id="walkthrough">Full walkthrough</h2>
 
@@ -176,22 +182,31 @@ terraform init</code></pre>
     <pre><code>terraform output</code></pre>
     <p>Shows the public/private IPs and ready-to-run <code>aws ssm start-session</code> commands for each node. Even the private nodes are reachable this way thanks to SSM.</p>
 
-    <h3>6. Install Ansible on the control node</h3>
-    <pre><code>aws ssm start-session --target &lt;pri-ctr_id&gt;   # or: use the terraform output
-# then, on the control node or your local machine, if not already present:
-ansible-galaxy role install geerlingguy.docker
-ansible-galaxy collection install amazon.aws community.docker prometheus.prometheus
+    <h3>6. Bootstrap the control node (run from your local machine)</h3>
+    <p><code>playbook-setup-ansible.yaml</code> (hosts: <code>ctr</code>) connects to the private control node <em>over SSM</em> and does the whole setup for you — you do <strong>not</strong> install Ansible parts on the control node by hand:</p>
+    <ul>
+      <li>creates a Python virtual environment (<code>/opt/ansible-venv</code>) and installs Ansible + boto3/botocore in it;</li>
+      <li>installs the AWS CLI v2 and Session Manager plugin;</li>
+      <li>copies <code>ansible.cfg</code>, <code>inventory.ini</code>, the other playbooks, <code>compose.yaml</code>, <code>prometheus.yml</code>, and <code>grafana-provisioning/</code> to <code>/opt/ansible</code>;</li>
+      <li><strong>installs the roles and collections</strong> — <code>geerlingguy.docker</code>, <code>amazon.aws</code>, <code>community.docker</code>, <code>prometheus.prometheus</code> — on the control node.</li>
+    </ul>
+    <pre><code># must run FROM your local machine (the ctr node has no Ansible yet)
+cd ansible/   # so ./inventory.ini resolves
 ansible-playbook playbook-setup-ansible.yaml</code></pre>
-    <p><code>playbook-setup-ansible.yaml</code> (hosts: <code>ctr</code>) boots the control node: it creates a Python virtual environment, installs Ansible + boto3/botocore in it, installs the AWS CLI and SSM plugin, and copies the other playbooks and configs to <code>/opt/ansible</code>.</p>
-    <div class="note">The <code>ansible.cfg</code> defaults to <code>inventory = inventory.ini</code>, so playbooks can be run without <code>-i</code> as long as you run them from <code>ansible/</code>.</div>
+    <p>To run this playbook you only need a local Ansible installation capable of the <code>aws_ssm</code> connection — i.e. <code>pip install ansible boto3 botocore</code> plus the <code>amazon.aws</code> collection and the SSM plugin. None of the app/monitoring roles are needed locally; they are installed on <code>pri-ctr</code> by this playbook. The local <code>aws_ssm</code> connection also relies on the SSM S3 bucket created by <code>terraform apply</code> (configured in the generated <code>inventory.ini</code>).</p>
+    <div class="note">The <code>ansible.cfg</code> defaults to <code>inventory = inventory.ini</code>, so playbooks can be run without <code>-i</code> as long as you run them from a directory containing that file.</div>
 
-    <h3>7. Deploy the web app</h3>
-    <pre><code>ansible-playbook playbook-web-stack.yaml</code></pre>
+    <h3>7. Deploy the web app (run on the control node)</h3>
+    <p>Connect to the control node and run the web playbook there — not on your laptop:</p>
+    <pre><code>aws ssm start-session --target &lt;pri-ctr_id&gt;   # see: terraform output ssm_pri-ctr
+cd /opt/ansible
+ansible-playbook playbook-web-stack.yaml</code></pre>
     <p><code>playbook-web-stack.yaml</code> (hosts: <code>web</code>) installs Docker + node_exporter on the public server, logs into ECR, pulls <code>devops-bootcamp-project/ship:latest</code>, and runs it on port 80.</p>
     <p>Then visit the app at <code>http://&lt;pub-web public IP&gt;</code> or the Cloudflare record (e.g. <code>http://web.&lt;your-domain&gt;</code>).</p>
 
-    <h3>8. Bring up monitoring</h3>
-    <pre><code>ansible-playbook playbook-mon-stack.yaml</code></pre>
+    <h3>8. Bring up monitoring (run on the control node)</h3>
+    <pre><code># from the same /opt/ansible directory on pri-ctr
+ansible-playbook playbook-mon-stack.yaml</code></pre>
     <p><code>playbook-mon-stack.yaml</code> (hosts: <code>mon</code>) deploys Docker Compose (<code>ansible/compose.yaml</code>) with Prometheus, Grafana, and <code>cloudflared</code>. It reads the tunnel token from SSM parameter <code>/devops-bootcamp-2026/tunnel-token</code>. The generated <code>prometheus.yml</code> scrapes the web and monitoring nodes' node_exporter (port 9100). Grafana is auto-provisioned with dashboards from <code>ansible/grafana-provisioning/</code>.</p>
     <p>Access Grafana through the Cloudflare Tunnel URL; Prometheus listens internally on :9090.</p>
 
@@ -211,7 +226,7 @@ ansible-playbook playbook-setup-ansible.yaml</code></pre>
     </ul>
 
     <footer>
-      Generated from this repository's own code and process notes (<code>docs/journey.txt</code>). Full Terraform walkthrough also lives in <code>README.md</code>.
+      Generated from this repository's own code and process notes (<code>docs/journey.txt</code>).
     </footer>
   </main>
 </body>
