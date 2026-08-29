@@ -9,7 +9,10 @@ services:
     image: grafana/grafana
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
     restart: unless-stopped
+    depends_on:
+      - prometheus
 
   cloudflared:
     image: cloudflare/cloudflared:latest
