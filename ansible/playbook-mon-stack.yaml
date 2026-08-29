@@ -9,25 +9,21 @@
 
   tasks:
     - name: Cipta folder stack
-      file:
+      ansible.builtin.file:
         path: /opt/monitoring
         state: directory
 
-    - name: Hantar prometheus.yaml
-      copy:
-        src: prometheus.yml
-        dest: /opt/monitoring/prometheus.yml
-
-    - name: Hantar compose.yaml
-      copy:
-        src: compose.yaml
-        dest: /opt/monitoring/compose.yaml
-
-    - name: Hantar grafana provisioning
-      copy:
-        src: grafana-provisioning
+    - name: Copy configs to opt/monitoring
+      ansible.builtin.copy:
+        src: "{{ item }}"
         dest: /opt/monitoring/
-        mode: preserve
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - compose.yaml
+        - prometheus.yml
+        - grafana-provisioning
 
     - name: Get SSM parameter using the target node's AWS CLI context
       ansible.builtin.command: >
