@@ -1,2 +1,406 @@
 <!DOCTYPE html>
-<h1>HELLO WORLD</h1>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevOps Bootcamp Project — Setup Guide</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --code-bg: #0b1120;
+      --warn-bg: #451a03;
+      --warn-border: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+    .layout {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 3rem;
+      align-items: start;
+    }
+    main { max-width: 860px; margin: 0 auto; padding-bottom: 3rem; min-width: 0; }
+    aside.nav {
+      position: sticky;
+      top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .15rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+      padding: .75rem .6rem;
+      font-size: .85rem;
+    }
+    aside.nav .nav-title {
+      margin: .15rem .35rem .35rem;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+    }
+    aside.nav a {
+      display: block;
+      padding: .28rem .45rem;
+      border-radius: 6px;
+      color: var(--text);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+    }
+    aside.nav a.sub { padding-left: 1.25rem; color: var(--muted); }
+    aside.nav a:hover { background: var(--code-bg); color: var(--accent); }
+    aside.nav a.active {
+      background: var(--code-bg);
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; gap: 1.25rem; padding: 1rem .75rem 3rem; }
+      aside.nav { position: static; max-height: 40vh; }
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+    }
+    h1 { margin: 0 0 .25rem; font-size: 1.9rem; }
+    h1 .tag { color: var(--accent); }
+    header p { margin: 0; color: var(--muted); }
+    h2 {
+      margin-top: 2.5rem;
+      font-size: 1.35rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: .35rem;
+    }
+    h3 { margin-top: 1.5rem; font-size: 1.05rem; color: var(--accent); }
+    a { color: var(--accent); }
+    ul, ol { padding-left: 1.4rem; }
+    li { margin: .3rem 0; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .1rem .35rem;
+      font-size: .9em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1rem;
+      overflow-x: auto;
+      font-size: .88rem;
+    }
+    pre code { background: none; border: none; padding: 0; }
+    .muted { color: var(--muted); }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid var(--border); padding: .5rem .7rem; text-align: left; vertical-align: top; }
+    th { background: var(--panel); }
+    td code { white-space: nowrap; }
+    .note {
+      background: var(--panel);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: .8rem 1rem;
+      margin: 1rem 0;
+    }
+    .warn {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      margin: 1rem 0;
+    }
+    .warn strong { color: var(--warn-border); }
+    .file { font-weight: 600; }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: .9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="nav" id="section-nav" aria-label="On this page">
+      <p class="nav-title">On this page</p>
+      <a href="#what">What this repo runs</a>
+      <a href="#layout">Repository layout</a>
+      <a href="#prereqs">Prerequisites</a>
+      <a href="#iam">IAM roles &amp; permissions</a>
+      <a class="sub" href="#iam-ctr">a. ansible-control-node</a>
+      <a class="sub" href="#iam-mon">b. monitoring</a>
+      <a class="sub" href="#iam-web">c. web (pub-web)</a>
+      <a href="#quickstart">Quick start</a>
+      <a href="#walkthrough">Full walkthrough</a>
+      <a class="sub" href="#step-1">1. Set credentials &amp; vars</a>
+      <a class="sub" href="#step-2">2. Initialize Terraform</a>
+      <a class="sub" href="#step-3">3. Preview infra</a>
+      <a class="sub" href="#step-4">4. Apply</a>
+      <a class="sub" href="#step-5">5. Check outputs</a>
+      <a class="sub" href="#step-6">6. Bootstrap control node</a>
+      <a class="sub" href="#step-7">7. Bring up monitoring</a>
+      <a class="sub" href="#step-8">8. Deploy web app</a>
+      <a href="#cleanup">Cleanup</a>
+      <a href="#caveats">Known caveats</a>
+    </aside>
+    <main>
+    <header>
+      <h1>devops-bootcamp-project <span class="tag">· setup guide</span></h1>
+      <p>Provision a 3-node AWS stack with Terraform, configure it via Ansible over AWS SSM, and serve a Dockerized web app with Prometheus/Grafana monitoring behind Cloudflare.</p>
+    </header>
+
+    <h2 id="what">What this repo runs</h2>
+    <p>This project deploys (all in <code>ap-southeast-1</code>):</p>
+    <ul>
+      <li><strong>pub-web</strong> — public EC2 (<code>t3.micro</code>) serving a Dockerized nginx app on port 80, pointed at by a proxied Cloudflare A record.</li>
+      <li><strong>pri-ctr</strong> — private EC2 acting as the Ansible control node.</li>
+      <li><strong>pri-mon</strong> — private EC2 running Prometheus, Grafana, and a <code>cloudflared</code> tunnel for remote access.</li>
+      <li><strong>Networking</strong> — VPC with public/private subnets + NAT (<code>terraform/network.tf</code>), security groups (<code>terraform/security.tf</code>).</li>
+      <li><strong>S3</strong> — remote Terraform state bucket + a bucket used by the SSM connection plugin.</li>
+      <li><strong>CI</strong> — a GitHub Actions workflow (<code>.github/workflows/deploy.yaml</code>) that lints the Terraform on push.</li>
+    </ul>
+    <p>Ansible connects to all nodes over <strong>AWS SSM</strong> (no public SSH), using an inventory file generated by <code>terraform apply</code>.</p>
+
+    <h2 id="layout">Repository layout</h2>
+    <table>
+      <tr><th>Path</th><th>Purpose</th></tr>
+      <tr><td><code>terraform/</code></td><td>Modular Terraform: providers, VPC/network, security groups, EC2 instances, S3, Cloudflare DNS, and templates that render the Ansible inventory &amp; Prometheus config.</td></tr>
+      <tr><td><code>ansible/</code></td><td>Playbooks, <code>ansible.cfg</code>, Docker Compose stack (Prometheus/Grafana/cloudflared), and Grafana provisioning dashboards.</td></tr>
+      <tr><td><code>app/</code></td><td>Multi-stage Docker build (<code>app/Dockerfile</code>) for the web app image.</td></tr>
+      <tr><td><code>docs/</code></td><td>This static landing page (hosted on Cloudflare Pages / GitHub Pages).</td></tr>
+      <tr><td><code>.github/workflows/</code></td><td>CI — currently only Terraform linting is active.</td></tr>
+    </table>
+
+    <h2 id="prereqs">Prerequisites</h2>
+    <ul>
+      <li>AWS account with CLI credentials for <code>ap-southeast-1</code> (the region is hardcoded).</li>
+      <li>Terraform 1.15+ (<code>terraform/providers.tf</code> requires <code>&gt;= 1.15</code>).</li>
+      <li>On <strong>your local machine</strong>: AWS CLI v2 + SSM Session Manager plugin, Python 3 + <code>venv</code>, and Ansible + boto3 (only the <code>amazon.aws</code> collection is needed locally — see step 6).</li>
+      <li>A Cloudflare zone with an API token and its Zone ID.</li>
+      <li>IAM roles/instance profiles and an ECR repository that must already exist in your account — see <a href="#iam">IAM section</a> and <a href="#caveats">caveats</a>.</li>
+    </ul>
+    <p>The Ansible roles and other collections (<code>geerlingguy.docker</code>, <code>community.docker</code>, <code>prometheus.prometheus</code>) are <strong>not</strong> a local prerequisite — the bootstrap playbook installs them on the control node automatically.</p>
+
+    <h2 id="iam">IAM roles &amp; permissions</h2>
+    <p>Three IAM roles (referenced by Terraform as instance profiles in <code>terraform/ec2.tf</code>) must exist in your account so each node can only do its own job. Attach the managed policies plus the custom inline policy below to each role, then create an instance profile with the same name and add the role to it.</p>
+    <ul>
+      <li><code>ansible-control-node</code> — attached to <code>pri-ctr</code> (<code>data.aws_iam_instance_profile.ctr-profile</code>, <code>ec2.tf:11-13</code>).</li>
+      <li><code>web-ecr</code> — attached to <code>pub-web</code> (<code>data.aws_iam_instance_profile.web-profile</code>, <code>ec2.tf:15-17</code>).</li>
+      <li><code>monitoring</code> — attached to <code>pri-mon</code> (<code>data.aws_iam_instance_profile.mon-profile</code>, <code>ec2.tf:19-21</code>).</li>
+    </ul>
+
+    <h3 id="iam-ctr">a. ansible-control-node (pri-ctr)</h3>
+    <p>Managed policy: <code>AmazonSSMManagedInstanceCore</code>. Custom inline policy:</p>
+    <pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:StartSession",
+        "ssm:SendCommand",
+        "ssm:GetConnectionStatus",
+        "ssm:DescribeInstanceInformation",
+        "ssm:DescribeSessions",
+        "ssm:TerminateSession",
+        "ec2:DescribeInstances",
+        "ec2:DescribeRegions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::bootcamp-2026-proj-ssm",
+        "arn:aws:s3:::bootcamp-2026-proj-ssm/*"
+      ]
+    }
+  ]
+}</code></pre>
+    <p class="file">File to change if you use your own bucket: the SSM bucket ARN here must match the name in <code>terraform/s3.tf</code>.</p>
+
+    <h3 id="iam-mon">b. monitoring (pri-mon)</h3>
+    <p>Managed policy: <code>AmazonSSMManagedInstanceCore</code>. Custom inline policy:</p>
+    <pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+      ],
+      "Resource": "arn:aws:ssm:ap-southeast-1:257289932779:parameter/devops-bootcamp-2026/tunnel-token"
+    }
+  ]
+}</code></pre>
+    <p class="file">File to change for your own account: the account ID and region in the SSM parameter ARN, and the parameter path (<code>ansible/playbook-mon-stack.yaml</code> reads <code>/devops-bootcamp-2026/tunnel-token</code>).</p>
+
+    <h3 id="iam-web">c. web (pub-web, profile <code>web-ecr</code>)</h3>
+    <p>Managed policies: <code>AmazonSSMManagedInstanceCore</code> + <code>AmazonEC2ContainerRegistryReadOnly</code>. No inline policy needed — the read-only ECR access lets this node authenticate and pull the application image.</p>
+
+    <h2 id="quickstart">Quick start</h2>
+    <p>Where you run each command matters: Terraform and the <em>bootstrap</em> playbook run from your <strong>local machine</strong>, but the web/monitoring playbooks are meant to run <strong>on the control node</strong> over an SSM session.</p>
+    <div class="note">One-time local setup (bootstrap prerequisite): <code>pip install ansible boto3 botocore</code> and <code>ansible-galaxy collection install amazon.aws</code> inside a venv, plus the AWS CLI and SSM plugin. This is only to run the SSM-based <code>playbook-setup-ansible.yaml</code> once — it then installs the full Ansible stack on <code>pri-ctr</code>.</div>
+    <pre><code># ---------- local machine ----------
+cd terraform/
+terraform init          # connect to remote S3 state
+terraform plan -out=tfplan
+terraform apply tfplan  # creates infra + generates ../ansible/inventory.ini
+
+# bootstrap the control node (installs Ansible, roles &amp; collections on pri-ctr)
+cd ../ansible
+ansible-playbook playbook-setup-ansible.yaml      # targets: ctr
+
+# ---------- control node (pri-ctr) over SSM ----------
+aws ssm start-session --target &lt;pri-ctr_id&gt;       # see: terraform output ssm_pri-ctr
+cd /opt/ansible                                   # playbooks copied here by the bootstrap
+ansible-playbook playbook-mon-stack.yaml          # targets: mon (run first)
+ansible-playbook playbook-web-stack.yaml          # targets: web</code></pre>
+
+    <h2 id="walkthrough">Full walkthrough</h2>
+
+    <h3 id="step-1">1. Set your credentials and variables</h3>
+    <p class="file">File to change: <code>terraform/terraform.tfvars</code> — create this yourself.</p>
+    <p><code>*.tfvars</code> files are gitignored (<code>.gitignore</code>), so the repo ships without one. Copy the three variables that <code>terraform/variables.tf</code> declares:</p>
+    <pre><code># terraform/terraform.tfvars
+cloudflare_api_token = "your_api_token_here"   # Cloudflare &gt; My Profile &gt; API Tokens
+cloudflare_zone_id   = "your_zone_id_here"     # Cloudflare &gt; domain page &gt; Overview
+cloudflare_record    = "web"                    # subdomain for the A record</code></pre>
+    <div class="warn"><strong>Security:</strong> never commit this file. The on-disk <code>terraform.tfvars</code> in a fresh clone of the original environment holds a live token — generate your own.</div>
+    <p><code>terraform apply</code> also expects the following to already exist in your account (they are referenced, not created, by this repo): IAM instance profiles <code>ansible-control-node</code>, <code>web-ecr</code>, and <code>monitoring</code> with the policies in the <a href="#iam">IAM section</a> (<code>terraform/ec2.tf</code>), plus your own ECR repository <code>devops-bootcamp-project/ship</code>.</p>
+
+    <h3 id="step-2">2. Initialize Terraform</h3>
+    <p>State lives in a remote S3 backend, so init needs working AWS credentials:</p>
+    <pre><code>cd terraform/
+terraform init</code></pre>
+    <p class="file">Note — file to change if you own this on your own account: the backend bucket <code>bootcamp-2026-proj-hfe</code> and the provider region are hardcoded in <code>terraform/providers.tf</code>, and the SSM bucket <code>bootcamp-2026-proj-ssm</code> is fixed in <code>terraform/s3.tf</code>.</p>
+
+    <h3 id="step-3">3. Preview the infrastructure</h3>
+    <pre><code>terraform plan -out=tfplan</code></pre>
+    <p>Review that the instance types, subnets, and security groups match your requirements before applying.</p>
+
+    <h3 id="step-4">4. Apply</h3>
+    <pre><code>terraform apply tfplan</code></pre>
+    <p>Provisions the VPC, security groups, S3 buckets, three EC2 instances, the Cloudflare DNS record, and renders two generated files used by Ansible:</p>
+    <ul>
+      <li><code>ansible/inventory.ini</code> — inventory with SSM connection settings (template: <code>terraform/inventory.ini.tftpl</code>).</li>
+      <li><code>ansible/prometheus.yml</code> — scrape targets resolved to node private IPs (template: <code>terraform/prometheus.yml.tftpl</code>).</li>
+    </ul>
+    <p>The instance IDs in the inventory are from the current run, so re-running <code>apply</code> after infrastructure changes will refresh the file.</p>
+
+    <h3 id="step-5">5. Check the outputs</h3>
+    <pre><code>terraform output</code></pre>
+    <p>Shows the public/private IPs and ready-to-run <code>aws ssm start-session</code> commands for each node. Even the private nodes are reachable this way thanks to SSM.</p>
+
+    <h3 id="step-6">6. Bootstrap the control node (run from your local machine)</h3>
+    <p><code>playbook-setup-ansible.yaml</code> (hosts: <code>ctr</code>) connects to the private control node <em>over SSM</em> and does the whole setup for you — you do <strong>not</strong> install Ansible parts on the control node by hand:</p>
+    <ul>
+      <li>creates a Python virtual environment (<code>/opt/ansible-venv</code>) and installs Ansible + boto3/botocore in it;</li>
+      <li>installs the AWS CLI v2 and Session Manager plugin;</li>
+      <li>copies <code>ansible.cfg</code>, <code>inventory.ini</code>, the other playbooks, <code>compose.yaml</code>, <code>prometheus.yml</code>, and <code>grafana-provisioning/</code> to <code>/opt/ansible</code>;</li>
+      <li><strong>installs the roles and collections</strong> — <code>geerlingguy.docker</code>, <code>amazon.aws</code>, <code>community.docker</code>, <code>prometheus.prometheus</code> — on the control node.</li>
+    </ul>
+    <pre><code># must run FROM your local machine (the ctr node has no Ansible yet)
+cd ansible/   # so ./inventory.ini resolves
+ansible-playbook playbook-setup-ansible.yaml</code></pre>
+    <p>To run this playbook you only need a local Ansible installation capable of the <code>aws_ssm</code> connection — i.e. <code>pip install ansible boto3 botocore</code> plus the <code>amazon.aws</code> collection and the SSM plugin. None of the app/monitoring roles are needed locally; they are installed on <code>pri-ctr</code> by this playbook. The local <code>aws_ssm</code> connection also relies on the SSM S3 bucket created by <code>terraform apply</code> (configured in the generated <code>inventory.ini</code>).</p>
+    <div class="note">The <code>ansible.cfg</code> defaults to <code>inventory = inventory.ini</code>, so playbooks can be run without <code>-i</code> as long as you run them from a directory containing that file.</div>
+
+    <h3 id="step-7">7. Bring up monitoring (run on the control node)</h3>
+    <pre><code># from /opt/ansible on pri-ctr — run monitoring BEFORE the web stack
+ansible-playbook playbook-mon-stack.yaml</code></pre>
+    <p><code>playbook-mon-stack.yaml</code> (hosts: <code>mon</code>) deploys Docker Compose (<code>ansible/compose.yaml</code>) with Prometheus, Grafana, and <code>cloudflared</code>. It reads the tunnel token from SSM parameter <code>/devops-bootcamp-2026/tunnel-token</code>. The generated <code>prometheus.yml</code> scrapes the web and monitoring nodes' node_exporter (port 9100). Grafana is auto-provisioned with dashboards from <code>ansible/grafana-provisioning/</code>.</p>
+    <p>Access Grafana through the Cloudflare Tunnel URL; Prometheus listens internally on :9090.</p>
+
+    <h3 id="step-8">8. Deploy the web app (run on the control node)</h3>
+    <p>Connect to the control node and run the web playbook there, after monitoring — not on your laptop:</p>
+    <pre><code># from the same /opt/ansible directory on pri-ctr
+ansible-playbook playbook-web-stack.yaml</code></pre>
+    <p><code>playbook-web-stack.yaml</code> (hosts: <code>web</code>) installs Docker + node_exporter on the public server, logs into ECR, pulls <code>devops-bootcamp-project/ship:latest</code>, and runs it on port 80.</p>
+    <p>Then visit the app at <code>http://&lt;pub-web public IP&gt;</code> or the Cloudflare record (e.g. <code>http://web.&lt;your-domain&gt;</code>).</p>
+
+    <h2 id="cleanup">Cleanup</h2>
+    <p>To tear everything down (run from <code>terraform/</code>):</p>
+    <pre><code>terraform destroy</code></pre>
+    <p>Note: this removes the Cloudflare DNS record, but ECR images and any manually created IAM profiles/S3 buckets are left behind.</p>
+
+    <h2 id="caveats">Known caveats when cloning / forking</h2>
+    <div class="warn"><strong>Web app source is missing.</strong> <code>app/</code> contains only <code>app/Dockerfile</code>. The build runs <code>npm ci</code> and <code>npm run build</code> against <code>package.json</code>/`package-lock.json` and a source tree that do not exist in this repo, then serves <code>dist/</code> from nginx. A fresh clone <em>cannot</em> build the image yet. To fix it: <span class="file">add your app source + package files under <code>app/</code></span> (leave <code>app/Dockerfile</code> as the build definition — it references <code>. </code> as the context), then <strong>build and push the image to your own ECR repository</strong> in your account. The web playbook pulls <code>devops-bootcamp-project/ship:latest</code> from <code>&lt;your-account&gt;.dkr.ecr.ap-southeast-1.amazonaws.com</code> — either create a repo with that exact name or <span class="file">update the <code>image_name</code> var in <code>ansible/playbook-web-stack.yaml</code></span> to the repo you use.</div>
+    <ul>
+      <li><span class="file">Hardcoded regional/account values</span> — backend bucket <code>bootcamp-2026-proj-hfe</code> (<code>terraform/providers.tf</code>), SSM bucket <code>bootcamp-2026-proj-ssm</code> (<code>terraform/s3.tf</code>), region <code>ap-southeast-1</code> (<code>terraform/providers.tf</code>, <code>terraform/inventory.tf</code>, templates). Change these for your own account.</li>
+      <li><span class="file">Pre-existing resources required</span> — IAM instance profiles <code>ansible-control-node</code>, <code>web-ecr</code>, <code>monitoring</code> (policies in the <a href="#iam">IAM section</a>; referenced in <code>terraform/ec2.tf</code>) and an ECR repository <strong>in your own account</strong> must already exist; Terraform only references them.</li>
+      <li><strong>Secrets in SSM</strong> — the tunnel token is expected at SSM parameter <code>/devops-bootcamp-2026/tunnel-token</code> (<code>ansible/playbook-mon-stack.yaml</code>). Create this yourself.</li>
+      <li><strong>Generated files</strong> — <code>ansible/inventory.ini</code> and <code>ansible/prometheus.yml</code> are outputs of <code>terraform apply</code> and are gitignored / overwritten; don't hand-edit them.</li>
+      <li><strong>CI is minimal</strong> — <code>.github/workflows/deploy.yaml</code> only lints Terraform (tflint); the test/build/deploy jobs are commented out pending the app source above.</li>
+    </ul>
+
+    <footer>
+      Generated from this repository's own code and process notes (<code>docs/journey.txt</code>).
+    </footer>
+  </main>
+  </div>
+  <script>
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll('#section-nav a[href^="#"]'));
+      var sections = links.map(function (a) {
+        return document.getElementById(a.getAttribute('href').slice(1));
+      });
+      var OFFSET = 120;
+      function onScroll() {
+        var pos = window.scrollY + OFFSET;
+        var bottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+        var current = sections[0];
+        for (var i = 0; i < sections.length; i++) {
+          var rect = sections[i].getBoundingClientRect();
+          if (bottom || rect.top + window.scrollY <= pos) current = sections[i];
+        }
+        links.forEach(function (l) {
+          var on = l.getAttribute('href') === '#' + current.id;
+          l.classList.toggle('active', on);
+          if (on) l.setAttribute('aria-current', 'true');
+          else l.removeAttribute('aria-current');
+        });
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll, { passive: true });
+      onScroll();
+    })();
+  </script>
+</body>
+</html>
