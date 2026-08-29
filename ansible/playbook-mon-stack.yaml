@@ -5,6 +5,7 @@
     docker_users: [ubuntu]
   roles:
     - geerlingguy.docker
+    - prometheus.prometheus.node_exporter
 
   tasks:
     - name: Cipta folder stack
@@ -21,6 +22,12 @@
       copy:
         src: compose.yaml
         dest: /opt/monitoring/compose.yaml
+
+    - name: Hantar grafana provisioning
+      copy:
+        src: grafana-provisioning
+        dest: /opt/monitoring/
+        mode: preserve
 
     - name: Get SSM parameter using the target node's AWS CLI context
       ansible.builtin.command: >
