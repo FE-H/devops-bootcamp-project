@@ -13,6 +13,7 @@
 
   roles:
     - geerlingguy.docker
+    - prometheus.prometheus.node_exporter
 
   tasks:
     - name: Ensure prerequisites are installed (Ubuntu/Debian)
