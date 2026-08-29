@@ -112,3 +112,7 @@ terraform destroy
 ```
 
 (This removes the Cloudflare DNS record; ECR images and any manually created IAM/S3 resources are left behind.)
+
+## ⚠️ Disclaimer
+
+This project was developed with the assistance of AI coding tools — Google Gemini and opencode.
