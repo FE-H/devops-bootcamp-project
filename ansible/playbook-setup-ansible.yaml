@@ -2,53 +2,56 @@
   hosts: ctr
   become: true
   gather_facts: true
-  vars: 
+  vars:
     ansible_python_interpreter: /usr/bin/python3
 
   pre_tasks:
-    - name : Bootstrap required package bindings
-      ansible.builtin.raw: apt-get update && apt-get install -y python3-apt python3-pip
+    - name: Bootstrap required package bindings
+      ansible.builtin.raw: apt-get update && apt-get install -y python3-apt python3-venv
       changed_when: false
       when: ansible_facts['os_family'] == "Debian"
-  
+
   tasks:
     - name: Ensure prerequisites are installed (Ubuntu/Debian)
       ansible.builtin.apt:
-        name: 
-          - software-properties-common
+        name:
           - unzip
         state: present
         update_cache: false
       when: ansible_facts['os_family'] == "Debian"
-    
-    - name: Add official Ansible PPA repository (Ubuntu/Debian)
-      ansible.builtin.deb822_repository:
-        name: ansible-official
-        types: deb
-        uris: https://launchpadcontent.net
-        suites: "{{ ansible_facts['distribution_release'] }}"
-        components: main
-        state: present
-      register: ppa_added
-      when: ansible_facts['os_family'] == "Debian" and ansible_facts['distribution'] == "Ubuntu"
 
-    - name: Update apt cache if repository was ppa_added
-      ansible.builtin.apt:
-        update_cache: true
-      when: ppa_added.changed
+    - name: Create Ansible virtual environment
+      ansible.builtin.command:
+        cmd: /usr/bin/python3 -m venv --system-site-packages /opt/ansible-venv
+        creates: /opt/ansible-venv/bin/pip
 
-    - name: Install Ansible (Ubuntu/Debian)
-      ansible.builtin.apt:
-        name: ansible
-        state: present
-      when: ansible_facts['os_family'] == "Debian"
-
-    - name: Install required Python AWS SDK components
-      ansible.builtin.apt:
+    - name: Install Ansible and AWS SDK components into the virtual environment
+      ansible.builtin.pip:
         name:
-          - python3-boto3
-          - python3-botocore
+          - ansible
+          - boto3
+          - botocore
+        virtualenv: /opt/ansible-venv
         state: present
+
+    - name: Symlink Ansible binaries into /usr/local/bin
+      ansible.builtin.file:
+        src: /opt/ansible-venv/bin/{{ item }}
+        dest: /usr/local/bin/{{ item }}
+        state: link
+        force: true
+      loop:
+        - ansible
+        - ansible-config
+        - ansible-console
+        - ansible-connection
+        - ansible-doc
+        - ansible-galaxy
+        - ansible-inventory
+        - ansible-playbook
+        - ansible-pull
+        - ansible-vault
+
     # --- START OFFICIAL AWS CLI V2 INSTALLATION BLOCK ---
     - name: Check if AWS CLI v2 is already installed
       ansible.builtin.command: aws --version
@@ -74,13 +77,13 @@
           ansible.builtin.command: /tmp/aws/install --update
           changed_when: true
       when: aws_cli_check.rc != 0  # Only runs if "aws" command isn't found
-      
+
     - name: Install AWS Session Manager Plugin (Debian/Ubuntu)
       ansible.builtin.apt:
         deb: https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb
         state: present
       when: ansible_facts['os_family'] == "Debian"
-    
+
     - name: Setup destination folder
       file:
         path: /opt/ansible
@@ -108,6 +111,24 @@
         - { type: 'role',       name: 'geerlingguy.docker' }
         - { type: 'collection', name: 'amazon.aws' }
         - { type: 'collection', name: 'community.docker' }
-        - { type: 'collection', name: 'prometheus.prometheus' }          
+        - { type: 'collection', name: 'prometheus.prometheus' }
       become: false
+      changed_when: false
+
+- name: Validate virtual environment python interpreter override
+  hosts: ctr
+  become: true
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: /opt/ansible-venv/bin/python
+
+  tasks:
+    - name: Verify Ansible is importable from the virtual environment
+      ansible.builtin.command: "{{ ansible_python_interpreter }} -c 'import ansible; print(ansible.__version__)'"
+      register: ansible_version_check
+      changed_when: false
+
+    - name: Verify boto3 is importable from the virtual environment
+      ansible.builtin.command: "{{ ansible_python_interpreter }} -c 'import boto3; print(boto3.__version__)'"
+      register: boto3_version_check
       changed_when: false
