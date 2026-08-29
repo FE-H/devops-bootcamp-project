@@ -203,6 +203,7 @@
 
     <h2 id="iam">IAM roles &amp; permissions</h2>
     <p>Three IAM roles (referenced by Terraform as instance profiles in <code>terraform/ec2.tf</code>) must exist in your account so each node can only do its own job. Attach the managed policies plus the custom inline policy below to each role, then create an instance profile with the same name and add the role to it.</p>
+    <div class="note"><strong>Why these permissions.</strong> The design follows least-privilege: one role per node, each scoped to exactly one responsibility. <code>AmazonSSMManagedInstanceCore</code> is on all three so the SSM agent runs and any node can be reached over <code>aws_ssm</code> without public SSH. The only broad grants (<code>Resource: "*"</code>) are the SSM/EC2 <em>read</em> actions needed to establish SSM sessions; anything touching data is narrowed to a specific bucket or a single SSM parameter. Each breakdown below explains what its role must accomplish and therefore why those particular actions are allowed.</div>
     <ul>
       <li><code>ansible-control-node</code> — attached to <code>pri-ctr</code> (<code>data.aws_iam_instance_profile.ctr-profile</code>, <code>ec2.tf:11-13</code>).</li>
       <li><code>web-ecr</code> — attached to <code>pub-web</code> (<code>data.aws_iam_instance_profile.web-profile</code>, <code>ec2.tf:15-17</code>).</li>
@@ -244,6 +245,7 @@
     }
   ]
 }</code></pre>
+    <div class="note"><strong>Why.</strong> This node <em>is</em> the Ansible control plane, so it needs to open SSM sessions and push commands to the other nodes (<code>ssm:StartSession</code>/<code>SendCommand</code>, plus session/count/session-status reads to manage them) and to discover instances and regions (<code>ec2:DescribeInstances</code>/<code>DescribeRegions</code>), which is what the <code>amazon.aws</code> <code>aws_ssm</code> connection uses to resolve the inventory IDs in <code>inventory.ini</code>. Because the SSM connection transfers its payload (scripts, module files) through a dedicated bucket — the inventory sets <code>ansible_aws_ssm_bucket_name</code> — it also needs object read/write/delete on exactly that bucket (<code>bootcamp-2026-proj-ssm</code>), nothing else. In short: orchestrate sessions (broad read) + touch only its own transfer bucket.</div>
     <p class="file">File to change if you use your own bucket: the SSM bucket ARN here must match the name in <code>terraform/s3.tf</code>.</p>
 
     <h3 id="iam-mon">b. monitoring (pri-mon)</h3>
@@ -269,10 +271,12 @@
     }
   ]
 }</code></pre>
+    <div class="note"><strong>Why.</strong> This node only <em>consumes</em> two things. It reads the Cloudflare tunnel token for <code>cloudflared</code>, so it gets <code>ssm:GetParameter</code> restricted to that single parameter ARN — never to the whole parameter store (that is the one secret these permissions touch). It also describes EC2 instances/tags (read-only) to identify the hosts it monitors or target with Prometheus config. It cannot start sessions, read other secrets, or touch S3.</div>
     <p class="file">File to change for your own account: the account ID and region in the SSM parameter ARN, and the parameter path (<code>ansible/playbook-mon-stack.yaml</code> reads <code>/devops-bootcamp-2026/tunnel-token</code>).</p>
 
     <h3 id="iam-web">c. web (pub-web, profile <code>web-ecr</code>)</h3>
     <p>Managed policies: <code>AmazonSSMManagedInstanceCore</code> + <code>AmazonEC2ContainerRegistryReadOnly</code>. No inline policy needed — the read-only ECR access lets this node authenticate and pull the application image.</p>
+    <div class="note"><strong>Why.</strong> The web server's only interaction with AWS beyond being managed is pulling containers: Docker authenticates to ECR and pulls <code>devops-bootcamp-project/ship:latest</code> (<code>playbook-web-stack.yaml</code>). Read-only registry access is exactly that — it cannot push images or read anything else. This is the simplest role on purpose; nothing about serving port 80 requires session, parameter, or S3 access.</div>
 
     <h2 id="quickstart">Quick start</h2>
     <p>Where you run each command matters: Terraform and the <em>bootstrap</em> playbook run from your <strong>local machine</strong>, but the web/monitoring playbooks are meant to run <strong>on the control node</strong> over an SSM session.</p>
